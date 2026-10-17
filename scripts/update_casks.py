@@ -5,6 +5,7 @@
 - x1a0he-wechat-plugin (微信插件)
 - wechat-universal (与插件严格锁定的官网 Universal 微信)
 - xiaoheiribao (小黑日报助手)
+- logi-options-plus-mini (精简版 Logi Options+)
 """
 
 import os
@@ -13,6 +14,7 @@ import sys
 import json
 import hashlib
 import urllib.request
+import xml.etree.ElementTree as ET
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CASKS_DIR = os.path.join(ROOT_DIR, "Casks")
@@ -127,10 +129,43 @@ def update_xiaoheiribao(updated_list):
     else:
         print(f"  小黑日报助手已是最新版 ({latest_ver})。")
 
+def update_logi_options_plus_mini(updated_list):
+    print(">> 检查 Logi Options+ mini 状态...")
+    appcast_url = "https://raw.githubusercontent.com/Qetesh/logi-options-plus-mini/main/appcast.xml"
+    try:
+        content = fetch_url(appcast_url)
+        root = ET.fromstring(content)
+        channel = root.find("channel")
+        first_item = channel.find("item")
+        short_ver = first_item.find("{http://www.andymatuschak.org/xml-namespaces/sparkle}shortVersionString").text.strip()
+        build_ver = first_item.find("{http://www.andymatuschak.org/xml-namespaces/sparkle}version").text.strip()
+        dmg_url = first_item.find("enclosure").attrib["url"].strip()
+    except Exception as e:
+        print(f"  解析 appcast.xml 失败: {e}")
+        return
+
+    full_ver = f"{short_ver},{build_ver}"
+    cask_path = os.path.join(CASKS_DIR, "logi-options-plus-mini.rb")
+    with open(cask_path, "r") as f:
+        cask_content = f.read()
+
+    old_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
+    if old_ver != full_ver:
+        print(f"  发现 Logi Options+ mini 新版本: {old_ver} -> {full_ver}")
+        sha = compute_sha256(dmg_url)
+        cask_content = re.sub(r'version "[^"]+"', f'version "{full_ver}"', cask_content, count=1)
+        cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', cask_content, count=1)
+        with open(cask_path, "w") as f:
+            f.write(cask_content)
+        updated_list.append(f"logi-options-plus-mini {full_ver}")
+    else:
+        print(f"  Logi Options+ mini 已是最新版 ({full_ver})。")
+
 def main():
     updated = []
     update_wechat_and_plugin(updated)
     update_xiaoheiribao(updated)
+    update_logi_options_plus_mini(updated)
     
     if updated:
         msg = "auto: 更新 " + ", ".join(updated)
