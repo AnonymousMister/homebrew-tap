@@ -9,7 +9,7 @@ cask "x1a0he-wechat-plugin" do
   homepage "https://github.com/X1a0He/X1a0HeWeChatPlugin"
 
   depends_on arch: :arm64
-  depends_on cask: "AnonymousMister/tap/wechat-universal"
+  depends_on cask: "wechat-universal"
 
   pkg "X1a0HeWeChatPlugin.pkg"
 

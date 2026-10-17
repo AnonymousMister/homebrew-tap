@@ -7,7 +7,7 @@ cask "loon" do
   desc "Network tool and proxy client for macOS"
   homepage "https://github.com/Loon0x00/Loon4Mac"
 
-  depends_on macos: ">= :monterey"
+  depends_on macos: :monterey
 
   app "Loon.app"
 
