@@ -23,6 +23,7 @@ brew tap AnonymousMister/tap
 | **小黑日报助手** | `xiaoheiribao` | `brew install --cask xiaoheiribao` | 每日自动请求官网 API 提取最新版本与计算哈希 |
 | **123云盘** | `123pan` | `brew install --cask 123pan` | 官方原生 ARM64 桌面端无限制直链 |
 | **飞牛同步** | `feiniu-sync` | `brew install --cask feiniu-sync` | 飞牛 fnOS 私有云 Mac 原生客户端 |
+| **SwiftyCrow** | `swiftycrow` | `brew install --cask swiftycrow` | 本地 Vision/Translation 屏幕实时翻译工具 |
 | **Loon for Mac** | `loon` | `brew install --cask loon` | 官方 releases 跟踪 |
 
 > **💡 微信输入法说明**：
