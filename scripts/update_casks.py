@@ -127,48 +127,10 @@ def update_xiaoheiribao(updated_list):
     else:
         print(f"  小黑日报助手已是最新版 ({latest_ver})。")
 
-def update_swiftycrow(updated_list):
-    print(">> 检查 SwiftyCrow 状态...")
-    api_url = "https://api.github.com/repos/PangMo5/SwiftyCrow/releases/latest"
-    try:
-        data = json.loads(fetch_url(api_url))
-    except Exception as e:
-        print(f"  请求 SwiftyCrow API 失败: {e}")
-        return
-
-    tag = data.get("tag_name", "").lstrip("v")
-    if not tag:
-        return
-
-    cask_path = os.path.join(CASKS_DIR, "swiftycrow.rb")
-    with open(cask_path, "r") as f:
-        cask_content = f.read()
-
-    old_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
-    if old_ver != tag:
-        print(f"  发现 SwiftyCrow 新版本: {old_ver} -> {tag}")
-        dmg_url = None
-        for asset in data.get("assets", []):
-            if asset.get("name", "").endswith(".dmg"):
-                dmg_url = asset.get("browser_download_url")
-                break
-        if not dmg_url:
-            dmg_url = f"https://github.com/PangMo5/SwiftyCrow/releases/download/v{tag}/SwiftyCrow-{tag}.dmg"
-
-        sha = compute_sha256(dmg_url)
-        cask_content = re.sub(r'version "[^"]+"', f'version "{tag}"', cask_content, count=1)
-        cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', cask_content, count=1)
-        with open(cask_path, "w") as f:
-            f.write(cask_content)
-        updated_list.append(f"swiftycrow {tag}")
-    else:
-        print(f"  SwiftyCrow 已是最新版 ({tag})。")
-
 def main():
     updated = []
     update_wechat_and_plugin(updated)
     update_xiaoheiribao(updated)
-    update_swiftycrow(updated)
     
     if updated:
         msg = "auto: 更新 " + ", ".join(updated)
