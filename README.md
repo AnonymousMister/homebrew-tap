@@ -21,6 +21,8 @@ brew tap AnonymousMister/tap
 | **微信防撤回插件 (小鹤版)** | `x1a0he-wechat-plugin` | `brew install --cask x1a0he-wechat-plugin` | 自动监听 X1a0He 官方 Release 与 PKG 哈希 |
 | **微信 Mac 官网原版 (插件锁版)** | `wechat-universal` | `brew install --cask wechat-universal` | **与插件严格版本绑定**，避免因微信误升级导致插件失效 |
 | **小黑日报助手** | `xiaoheiribao` | `brew install --cask xiaoheiribao` | 每日自动请求官网 API 提取最新版本与计算哈希 |
+| **123云盘** | `123pan` | `brew install --cask 123pan` | 官方原生 ARM64 桌面端无限制直链 |
+| **飞牛同步** | `feiniu-sync` | `brew install --cask feiniu-sync` | 飞牛 fnOS 私有云 Mac 原生客户端 |
 | **Loon for Mac** | `loon` | `brew install --cask loon` | 官方 releases 跟踪 |
 
 > **💡 微信输入法说明**：
