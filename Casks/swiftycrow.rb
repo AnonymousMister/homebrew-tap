@@ -7,7 +7,7 @@ cask "swiftycrow" do
   desc "Fully on-device screen translator powered by Apple Vision and Translation"
   homepage "https://github.com/PangMo5/SwiftyCrow"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "SwiftyCrow.app"
 
