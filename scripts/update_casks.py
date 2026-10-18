@@ -6,6 +6,7 @@
 - wechat-universal (与插件严格锁定的官网 Universal 微信)
 - xiaoheiribao (小黑日报助手)
 - logi-options-plus-mini (精简版 Logi Options+)
+- wechat-input (微信输入法)
 """
 
 import os
@@ -160,6 +161,51 @@ def update_logi_options_plus_mini(updated_list):
     else:
         print(f"  Logi Options+ mini 已是最新版 ({full_ver})。")
 
+def update_wechat_input(updated_list):
+    print(">> 检查微信输入法状态...")
+    portal_url = "https://z.weixin.qq.com/"
+    try:
+        html = fetch_url(portal_url)
+    except Exception as e:
+        print(f"  获取微信输入法官网失败: {e}")
+        return
+
+    matches = re.findall(r'https?://download\.weread\.qq\.com/app/wxkb/mac/([\d\.]+)/install_info_([\d\.]+)_(\d+)\.json', html)
+    if not matches:
+        print("  未能在页面中匹配到微信输入法正式版元数据链接")
+        return
+
+    ver_dir, ver, build = matches[0]
+    full_ver = f"{ver},{build}"
+    json_url = f"https://download.weread.qq.com/app/wxkb/mac/{ver_dir}/install_info_{ver}_{build}.json"
+
+    cask_path = os.path.join(CASKS_DIR, "wechat-input.rb")
+    with open(cask_path, "r") as f:
+        cask_content = f.read()
+
+    old_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
+    if old_ver != full_ver:
+        print(f"  发现微信输入法新版本: {old_ver} -> {full_ver}")
+        try:
+            j_content = fetch_url(json_url)
+            j_data = json.loads(j_content)
+            zip_url = j_data.get("zip_download_url")
+        except Exception as e:
+            print(f"  获取 install_info.json 失败: {e}")
+            return
+
+        if not zip_url:
+            zip_url = f"https://download.weread.qq.com/app/wxkb/mac/{ver}/WeType_{ver}_{build}.zip"
+
+        sha = compute_sha256(zip_url)
+        cask_content = re.sub(r'version "[^"]+"', f'version "{full_ver}"', cask_content, count=1)
+        cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', cask_content, count=1)
+        with open(cask_path, "w") as f:
+            f.write(cask_content)
+        updated_list.append(f"wechat-input {full_ver}")
+    else:
+        print(f"  微信输入法已是最新版 ({full_ver})。")
+
 def check_asset_exists(url):
     try:
         req = urllib.request.Request(url, headers=HEADERS)
@@ -257,6 +303,7 @@ def main():
     update_wechat_and_plugin(updated)
     update_xiaoheiribao(updated)
     update_logi_options_plus_mini(updated)
+    update_wechat_input(updated)
     update_feiniu_sync(updated, release_assets)
 
     if release_assets:
