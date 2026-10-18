@@ -197,56 +197,59 @@ def update_feiniu_sync(updated_list, release_assets):
 
     needs_update = (old_ver != latest_ver) or (not has_asset)
 
-    if needs_update:
-        if old_ver != latest_ver:
-            print(f"  发现飞牛同步新版本: {old_ver} -> {latest_ver}")
-        else:
-            print(f"  飞牛同步 Release 资产缺失，准备自动下载并推送到发布: v{latest_ver}")
+    if not needs_update:
+        print(f"  飞牛同步已是最新版 ({latest_ver}) 且 Release 资产已就绪，跳过。")
+        return
 
-        sign_api = "https://www.fnnas.com/asset/download-sign"
-        try:
-            sign_req = urllib.request.Request(
-                sign_api,
-                data=json.dumps({"url": raw_mac_url}).encode("utf-8"),
-                headers={"Content-Type": "application/json", "User-Agent": HEADERS["User-Agent"]}
-            )
-            with urllib.request.urlopen(sign_req, timeout=30) as resp:
-                sign_data = json.loads(resp.read().decode("utf-8"))
-                signed_url = sign_data.get("url")
-        except Exception as e:
-            print(f"  获取防盗链签名失败: {e}")
-            return
-
-        if not signed_url:
-            print("  未能获取有效的签名下载链接")
-            return
-
-        tmp_dmg = f"/tmp/fn-sync_{latest_ver}_aarch64.dmg"
-        print(f"  [正在从官网签名直链下载] {signed_url}")
-        h = hashlib.sha256()
-        dl_req = urllib.request.Request(signed_url, headers=HEADERS)
-        with urllib.request.urlopen(dl_req, timeout=180) as resp, open(tmp_dmg, "wb") as out_f:
-            while chunk := resp.read(65536):
-                h.update(chunk)
-                out_f.write(chunk)
-
-        sha = h.hexdigest()
-        print(f"  下载完成，SHA256: {sha}")
-
-        cask_content = re.sub(r'version "[^"]+"', f'version "{latest_ver}"', cask_content, count=1)
-        cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', cask_content, count=1)
-        with open(cask_path, "w") as f:
-            f.write(cask_content)
-
-        updated_list.append(f"feiniu-sync {latest_ver}")
-        release_assets.append({
-            "tag": f"v{latest_ver}",
-            "file": tmp_dmg,
-            "title": f"v{latest_ver}",
-            "notes": f"FeiNiu Sync 飞牛同步客户端官方包 v{latest_ver}"
-        })
+    if old_ver != latest_ver:
+        print(f"  发现飞牛同步新版本: {old_ver} -> {latest_ver}")
     else:
-        print(f"  飞牛同步已是最新版 ({latest_ver}) 且 Release 资产已存在。")
+        print(f"  飞牛同步 Release 资产缺失，准备自动下载并托管: v{latest_ver}")
+
+    sign_api = "https://www.fnnas.com/asset/download-sign"
+    try:
+        sign_req = urllib.request.Request(
+            sign_api,
+            data=json.dumps({"url": raw_mac_url}).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": HEADERS["User-Agent"]}
+        )
+        with urllib.request.urlopen(sign_req, timeout=30) as resp:
+            sign_data = json.loads(resp.read().decode("utf-8"))
+            signed_url = sign_data.get("url")
+    except Exception as e:
+        print(f"  获取防盗链签名失败: {e}")
+        return
+
+    if not signed_url:
+        print("  未能获取有效的签名下载链接")
+        return
+
+    tmp_dmg = f"/tmp/fn-sync_{latest_ver}_aarch64.dmg"
+    print(f"  [正在从官网签名直链下载] {signed_url}")
+    h = hashlib.sha256()
+    dl_req = urllib.request.Request(signed_url, headers=HEADERS)
+    with urllib.request.urlopen(dl_req, timeout=180) as resp, open(tmp_dmg, "wb") as out_f:
+        while chunk := resp.read(65536):
+            h.update(chunk)
+            out_f.write(chunk)
+
+    sha = h.hexdigest()
+    print(f"  下载完成，SHA256: {sha}")
+
+    new_cask_content = re.sub(r'version "[^"]+"', f'version "{latest_ver}"', cask_content, count=1)
+    new_cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', new_cask_content, count=1)
+    
+    if new_cask_content != cask_content:
+        with open(cask_path, "w") as f:
+            f.write(new_cask_content)
+        updated_list.append(f"feiniu-sync {latest_ver}")
+
+    release_assets.append({
+        "tag": f"v{latest_ver}",
+        "file": tmp_dmg,
+        "title": f"v{latest_ver}",
+        "notes": f"FeiNiu Sync 飞牛同步客户端官方包 v{latest_ver}"
+    })
 
 def main():
     updated = []

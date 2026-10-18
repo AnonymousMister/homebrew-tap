@@ -41,12 +41,27 @@ jobs:
               file_path = item["file"]
               title = item.get("title", tag)
               notes = item.get("notes", "自动托管下载资产")
-              print(f"正在发布资产 {file_path} 到 Tag {tag}...")
+              print(f"正在发布最新资产 {file_path} 到 Tag {tag}...")
+
+              # 1. 创建或更新当前最新 Release
               res = subprocess.run(["gh", "release", "view", tag], capture_output=True)
               if res.returncode == 0:
                   subprocess.run(["gh", "release", "upload", tag, file_path, "--clobber"], check=True)
               else:
                   subprocess.run(["gh", "release", "create", tag, file_path, "--title", title, "--notes", notes], check=True)
+
+              # 2. 清理所有历史旧 Releases 与 Tags，保证发布页面仅保留最新版本
+              list_res = subprocess.run(["gh", "release", "list", "--json", "tagName"], capture_output=True, text=True)
+              if list_res.returncode == 0:
+                  try:
+                      releases = json.loads(list_res.stdout)
+                      for rel in releases:
+                          old_tag = rel.get("tagName")
+                          if old_tag and old_tag != tag:
+                              print(f"清理旧版本 Release: {old_tag}")
+                              subprocess.run(["gh", "release", "delete", old_tag, "--yes", "--cleanup-tag"], check=False)
+                  except Exception as e:
+                      print(f"清理旧 Release 出错 (跳过): {e}")
           '
 
       - name: Commit & Push Changes
@@ -55,5 +70,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/
-          git commit -m "${{ steps.update.outputs.commit_msg }}"
-          git push
+          if git diff --cached --quiet; then
+            echo "✨ 没有检测到实质文件变动，跳过提交与推送。"
+          else
+            git commit -m "${{ steps.update.outputs.commit_msg }}"
+            git push
+          fi
