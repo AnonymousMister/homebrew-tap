@@ -1,6 +1,6 @@
 cask "wechat-universal" do
   version "4.1.15.72,270152"
-  sha256 "ec241c5533a1e6de2f0f66864f7174a9ec16fe46d8c34a1b3c32c079939d2d38"
+  sha256 "8fc1b6d136754368588ae841330a435f31bda1d84baf2dbf999b0933cdee22fc"
 
   url "https://dldir1v6.qq.com/weixin/Universal/Mac/xWeChatMac_universal_#{version.csv.first}_#{version.csv.second}.dmg"
   name "WeChat Universal (Plugin Supported)"

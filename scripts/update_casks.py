@@ -70,13 +70,10 @@ def update_wechat_and_plugin(updated_list):
     # 2. 提取配套的 Universal 微信版本与 SHA256
     # 格式: | 4.1.15.72 | 270152 |  ✅  | 2.12.0 / 2.12.1 | [立即下载](https://dldir1v6.qq.com/weixin/Universal/Mac/xWeChatMac_universal_4.1.15.72_270152.dmg) |
     wechat_match = re.search(r"\|\s*([\d\.]+)\s*\|\s*(\d+)\s*\|\s*✅.*?dldir1v6\.qq\.com", content)
-    wechat_sha_match = re.search(r"SHA256:\s*([a-f0-9]{64})", content)
-    
-    if wechat_match and wechat_sha_match:
+    if wechat_match:
         wc_ver = wechat_match.group(1).strip()
         wc_build = wechat_match.group(2).strip()
         wc_full_ver = f"{wc_ver},{wc_build}"
-        wc_sha = wechat_sha_match.group(1).strip()
         
         wechat_cask = os.path.join(CASKS_DIR, "wechat-universal.rb")
         with open(wechat_cask, "r") as f:
@@ -85,6 +82,8 @@ def update_wechat_and_plugin(updated_list):
         old_wc_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
         if old_wc_ver != wc_full_ver:
             print(f"  发现插件配套微信新版本: {old_wc_ver} -> {wc_full_ver}")
+            wc_url = f"https://dldir1v6.qq.com/weixin/Universal/Mac/xWeChatMac_universal_{wc_ver}_{wc_build}.dmg"
+            wc_sha = compute_sha256(wc_url)
             cask_content = re.sub(r'version "[^"]+"', f'version "{wc_full_ver}"', cask_content, count=1)
             cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{wc_sha}"', cask_content, count=1)
             with open(wechat_cask, "w") as f:
