@@ -1,6 +1,6 @@
 cask "feiniu-sync" do
   version "0.2.3"
-  sha256 "e77ff71a1f11bf43086a0bf81c8f87cb11d278b8bae9b6b50af8553d04bfcc06"
+  sha256 "4bca0c5f0d57a0aafd7c20545edf5c1f8b82151e7baf9bb7ff2113deb5605994"
 
   url "https://github.com/AnonymousMister/homebrew-tap/releases/download/v#{version}/fn-sync_#{version}_aarch64.dmg"
   name "FeiNiu Sync"

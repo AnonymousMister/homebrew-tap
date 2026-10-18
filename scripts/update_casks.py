@@ -160,12 +160,116 @@ def update_logi_options_plus_mini(updated_list):
     else:
         print(f"  Logi Options+ mini 已是最新版 ({full_ver})。")
 
+def check_asset_exists(url):
+    try:
+        req = urllib.request.Request(url, headers=HEADERS)
+        req.get_method = lambda: "HEAD"
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+def update_feiniu_sync(updated_list, release_assets):
+    print(">> 检查飞牛同步状态...")
+    download_page = "https://www.fnnas.com/download"
+    try:
+        html = fetch_url(download_page)
+    except Exception as e:
+        print(f"  获取飞牛下载页面失败: {e}")
+        return
+
+    m = re.search(r"https?://[^\"\\]*?fn-sync_([\d\.]+)_aarch64\.dmg", html)
+    if not m:
+        print("  未能在页面中匹配到飞牛同步 ARM64 下载链接")
+        return
+
+    latest_ver = m.group(1).strip()
+    raw_mac_url = m.group(0).strip()
+
+    cask_path = os.path.join(CASKS_DIR, "feiniu-sync.rb")
+    with open(cask_path, "r") as f:
+        cask_content = f.read()
+
+    old_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
+
+    gh_release_url = f"https://github.com/AnonymousMister/homebrew-tap/releases/download/v{latest_ver}/fn-sync_{latest_ver}_aarch64.dmg"
+    has_asset = check_asset_exists(gh_release_url)
+
+    needs_update = (old_ver != latest_ver) or (not has_asset)
+
+    if needs_update:
+        if old_ver != latest_ver:
+            print(f"  发现飞牛同步新版本: {old_ver} -> {latest_ver}")
+        else:
+            print(f"  飞牛同步 Release 资产缺失，准备自动下载并推送到发布: v{latest_ver}")
+
+        sign_api = "https://www.fnnas.com/asset/download-sign"
+        try:
+            sign_req = urllib.request.Request(
+                sign_api,
+                data=json.dumps({"url": raw_mac_url}).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": HEADERS["User-Agent"]}
+            )
+            with urllib.request.urlopen(sign_req, timeout=30) as resp:
+                sign_data = json.loads(resp.read().decode("utf-8"))
+                signed_url = sign_data.get("url")
+        except Exception as e:
+            print(f"  获取防盗链签名失败: {e}")
+            return
+
+        if not signed_url:
+            print("  未能获取有效的签名下载链接")
+            return
+
+        tmp_dmg = f"/tmp/fn-sync_{latest_ver}_aarch64.dmg"
+        print(f"  [正在从官网签名直链下载] {signed_url}")
+        h = hashlib.sha256()
+        dl_req = urllib.request.Request(signed_url, headers=HEADERS)
+        with urllib.request.urlopen(dl_req, timeout=180) as resp, open(tmp_dmg, "wb") as out_f:
+            while chunk := resp.read(65536):
+                h.update(chunk)
+                out_f.write(chunk)
+
+        sha = h.hexdigest()
+        print(f"  下载完成，SHA256: {sha}")
+
+        cask_content = re.sub(r'version "[^"]+"', f'version "{latest_ver}"', cask_content, count=1)
+        cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', cask_content, count=1)
+        with open(cask_path, "w") as f:
+            f.write(cask_content)
+
+        updated_list.append(f"feiniu-sync {latest_ver}")
+        release_assets.append({
+            "tag": f"v{latest_ver}",
+            "file": tmp_dmg,
+            "title": f"v{latest_ver}",
+            "notes": f"FeiNiu Sync 飞牛同步客户端官方包 v{latest_ver}"
+        })
+    else:
+        print(f"  飞牛同步已是最新版 ({latest_ver}) 且 Release 资产已存在。")
+
 def main():
     updated = []
+    release_assets = []
     update_wechat_and_plugin(updated)
     update_xiaoheiribao(updated)
     update_logi_options_plus_mini(updated)
-    
+    update_feiniu_sync(updated, release_assets)
+
+    if release_assets:
+        manifest_path = "/tmp/release_assets.json"
+        with open(manifest_path, "w") as f:
+            json.dump(release_assets, f, indent=2)
+        print(f"\n📦 已准备 {len(release_assets)} 个 Release 待发布资产。")
+        if "GITHUB_OUTPUT" in os.environ:
+            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                f.write("has_release_asset=true\n")
+                f.write(f"release_manifest={manifest_path}\n")
+    else:
+        if "GITHUB_OUTPUT" in os.environ:
+            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                f.write("has_release_asset=false\n")
+
     if updated:
         msg = "auto: 更新 " + ", ".join(updated)
         print(f"\n🎉 更新完成: {msg}")

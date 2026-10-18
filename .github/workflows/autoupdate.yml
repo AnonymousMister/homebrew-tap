@@ -26,6 +26,29 @@ jobs:
         run: |
           python3 scripts/update_casks.py
 
+      - name: Publish Release Assets
+        if: steps.update.outputs.has_release_asset == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 -c '
+          import json, subprocess
+          manifest = "${{ steps.update.outputs.release_manifest }}"
+          with open(manifest) as f:
+              assets = json.load(f)
+          for item in assets:
+              tag = item["tag"]
+              file_path = item["file"]
+              title = item.get("title", tag)
+              notes = item.get("notes", "自动托管下载资产")
+              print(f"正在发布资产 {file_path} 到 Tag {tag}...")
+              res = subprocess.run(["gh", "release", "view", tag], capture_output=True)
+              if res.returncode == 0:
+                  subprocess.run(["gh", "release", "upload", tag, file_path, "--clobber"], check=True)
+              else:
+                  subprocess.run(["gh", "release", "create", tag, file_path, "--title", title, "--notes", notes], check=True)
+          '
+
       - name: Commit & Push Changes
         if: steps.update.outputs.has_update == 'true'
         run: |
