@@ -1,4 +1,4 @@
-cask "zync" do
+cask "zync-sh" do
   version "2.35.1"
   sha256 "301d660581c82b69c5c9090f75dc3cfb8a8a7b2e841a76beeb615f0300dc3f02"
 

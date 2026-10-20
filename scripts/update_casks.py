@@ -8,7 +8,7 @@
 - logi-options-plus-mini (精简版 Logi Options+)
 - wechat-input (微信输入法)
 - feiniu-sync (飞牛同步)
-- zync (现代 SSH 工作区终端)
+- zync-sh (现代 SSH 工作区终端)
 """
 
 import os
@@ -378,7 +378,7 @@ def update_zync(updated_list):
         print("  未能在 latest.json 中找到版本号")
         return
 
-    cask_path = os.path.join(CASKS_DIR, "zync.rb")
+    cask_path = os.path.join(CASKS_DIR, "zync-sh.rb")
     if not os.path.exists(cask_path):
         return
 
@@ -394,7 +394,7 @@ def update_zync(updated_list):
         cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', cask_content, count=1)
         with open(cask_path, "w", encoding="utf-8") as f:
             f.write(cask_content)
-        updated_list.append(f"zync {latest_ver}")
+        updated_list.append(f"zync-sh {latest_ver}")
     else:
         print(f"  Zync 已是最新版 ({latest_ver})。")
 
