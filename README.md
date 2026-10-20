@@ -25,6 +25,7 @@ brew tap AnonymousMister/tap
 | **小黑日报助手** | `xiaoheiribao` | `brew install --cask xiaoheiribao` | 每日自动请求官网 API 提取最新版本与计算哈希 |
 | **Logi Options+ mini** | `logi-options-plus-mini` | `brew install --cask logi-options-plus-mini` | 追踪 Sparkle 官方 Appcast 自动更新精简版 |
 | **123云盘** | `123pan` | `brew install --cask 123pan` | 官方原生 ARM64 桌面端直链 |
+| **Zync** | `zync` | `brew install --cask zync` | 现代 SSH 工作区与终端工具（SFTP、隧道管理），每日监听 GitHub Release 自动巡检 |
 
 ---
 

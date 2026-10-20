@@ -7,6 +7,8 @@
 - xiaoheiribao (小黑日报助手)
 - logi-options-plus-mini (精简版 Logi Options+)
 - wechat-input (微信输入法)
+- feiniu-sync (飞牛同步)
+- zync (现代 SSH 工作区终端)
 """
 
 import os
@@ -361,6 +363,41 @@ def update_feiniu_sync(updated_list, release_assets):
         "notes": f"FeiNiu Sync 飞牛同步客户端官方包 v{latest_ver}"
     })
 
+def update_zync(updated_list):
+    print(">> 检查 Zync 状态...")
+    latest_json_url = "https://github.com/zync-sh/zync/releases/latest/download/latest.json"
+    try:
+        content = fetch_url(latest_json_url)
+        data = json.loads(content)
+        latest_ver = data.get("version", "").strip()
+    except Exception as e:
+        print(f"  获取 Zync latest.json 失败: {e}")
+        return
+
+    if not latest_ver:
+        print("  未能在 latest.json 中找到版本号")
+        return
+
+    cask_path = os.path.join(CASKS_DIR, "zync.rb")
+    if not os.path.exists(cask_path):
+        return
+
+    with open(cask_path, "r", encoding="utf-8") as f:
+        cask_content = f.read()
+
+    old_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
+    if old_ver != latest_ver:
+        print(f"  发现 Zync 新版本: {old_ver} -> {latest_ver}")
+        dmg_url = f"https://github.com/zync-sh/zync/releases/download/v{latest_ver}/zync_{latest_ver}_aarch64.dmg"
+        sha = compute_sha256(dmg_url)
+        cask_content = re.sub(r'version "[^"]+"', f'version "{latest_ver}"', cask_content, count=1)
+        cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', cask_content, count=1)
+        with open(cask_path, "w", encoding="utf-8") as f:
+            f.write(cask_content)
+        updated_list.append(f"zync {latest_ver}")
+    else:
+        print(f"  Zync 已是最新版 ({latest_ver})。")
+
 def main():
     updated = []
     release_assets = []
@@ -369,6 +406,7 @@ def main():
     update_logi_options_plus_mini(updated)
     update_wechat_input(updated)
     update_feiniu_sync(updated, release_assets)
+    update_zync(updated)
 
     if release_assets:
         manifest_path = "/tmp/release_assets.json"
