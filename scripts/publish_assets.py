@@ -48,11 +48,10 @@ def publish_assets(manifest_path):
 
                         # 判断是否属于当前软件类别，避免误删其它软件的 Release
                         should_delete = False
-                        if tag_prefix == "v":
-                            # 飞牛同步旧 tag 格式为 v0.x.x
-                            if re.match(r"^v\d+\.", old_tag):
-                                should_delete = True
-                        elif old_tag.startswith(tag_prefix):
+                        if old_tag.startswith(tag_prefix):
+                            should_delete = True
+                        elif tag_prefix == "feiniu-sync-" and re.match(r"^v\d+\.", old_tag):
+                            # 兼容并清理飞牛同步历史遗留的旧版 tag (v0.x.x)
                             should_delete = True
 
                         if should_delete:

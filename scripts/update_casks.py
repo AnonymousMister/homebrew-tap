@@ -298,10 +298,11 @@ def update_feiniu_sync(updated_list, release_assets):
 
     old_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
 
-    gh_release_url = f"https://github.com/AnonymousMister/homebrew-tap/releases/download/v{latest_ver}/fn-sync_{latest_ver}_aarch64.dmg"
+    gh_release_tag = f"feiniu-sync-v{latest_ver}"
+    gh_release_url = f"https://github.com/AnonymousMister/homebrew-tap/releases/download/{gh_release_tag}/fn-sync_{latest_ver}_aarch64.dmg"
     has_asset = check_asset_exists(gh_release_url)
 
-    needs_update = (old_ver != latest_ver) or (not has_asset)
+    needs_update = (old_ver != latest_ver) or (not has_asset) or ("feiniu-sync-v" not in cask_content)
 
     if not needs_update:
         print(f"  飞牛同步已是最新版 ({latest_ver}) 且 Release 资产已就绪，跳过。")
@@ -310,7 +311,7 @@ def update_feiniu_sync(updated_list, release_assets):
     if old_ver != latest_ver:
         print(f"  发现飞牛同步新版本: {old_ver} -> {latest_ver}")
     else:
-        print(f"  飞牛同步 Release 资产缺失，准备自动下载并托管: v{latest_ver}")
+        print(f"  飞牛同步 Release 资产缺失或未切换直链，准备自动下载并托管: {gh_release_tag}")
 
     sign_api = "https://www.fnnas.com/asset/download-sign"
     try:
@@ -344,6 +345,8 @@ def update_feiniu_sync(updated_list, release_assets):
 
     new_cask_content = re.sub(r'version "[^"]+"', f'version "{latest_ver}"', cask_content, count=1)
     new_cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', new_cask_content, count=1)
+    new_url_line = '  url "https://github.com/AnonymousMister/homebrew-tap/releases/download/feiniu-sync-v#{version}/fn-sync_#{version}_aarch64.dmg"'
+    new_cask_content = re.sub(r'  url "[^"]+"', new_url_line, new_cask_content, count=1)
     
     if new_cask_content != cask_content:
         with open(cask_path, "w") as f:
@@ -351,10 +354,10 @@ def update_feiniu_sync(updated_list, release_assets):
         updated_list.append(f"feiniu-sync {latest_ver}")
 
     release_assets.append({
-        "tag": f"v{latest_ver}",
-        "tag_prefix": "v",
+        "tag": gh_release_tag,
+        "tag_prefix": "feiniu-sync-",
         "file": tmp_dmg,
-        "title": f"v{latest_ver}",
+        "title": gh_release_tag,
         "notes": f"FeiNiu Sync 飞牛同步客户端官方包 v{latest_ver}"
     })
 

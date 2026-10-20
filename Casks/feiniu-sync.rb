@@ -2,7 +2,7 @@ cask "feiniu-sync" do
   version "0.2.3"
   sha256 "4bca0c5f0d57a0aafd7c20545edf5c1f8b82151e7baf9bb7ff2113deb5605994"
 
-  url "https://github.com/AnonymousMister/homebrew-tap/releases/download/v#{version}/fn-sync_#{version}_aarch64.dmg"
+  url "https://github.com/AnonymousMister/homebrew-tap/releases/download/feiniu-sync-v#{version}/fn-sync_#{version}_aarch64.dmg"
   name "FeiNiu Sync"
   name "飞牛同步"
   desc "Client for fnOS NAS file synchronization"
