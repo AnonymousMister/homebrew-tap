@@ -19,8 +19,8 @@ brew tap AnonymousMister/tap
 | 软件名称 | Cask 标识符 | 安装命令 | 自动更新说明 |
 | :--- | :--- | :--- | :--- |
 | **微信输入法** | `wechat-input` | `brew install --cask wechat-input` | 自动监听官网 API 元数据，并在 `/Applications` 建立设置面板快捷入口 |
-| **微信防撤回插件 (小鹤版)** | `x1a0he-wechat-plugin` | `brew install --cask x1a0he-wechat-plugin` | 自动监听 X1a0He 官方 Release 与 PKG 哈希，内置去隔离与防损坏签名 |
-| **微信 Mac 官网原版 (插件锁版)** | `wechat-universal` | `brew install --cask wechat-universal` | **与插件严格版本绑定**，避免因微信误升级导致插件失效 |
+| **微信防撤回插件 (小鹤版)** | `x1a0he-wechat-plugin` | `brew install --cask x1a0he-wechat-plugin` | 自动转存官方 PKG 至 GitHub Release 缓存，防止上游静默覆写，内置去隔离与防损坏签名 |
+| **微信 Mac 官网原版 (插件锁版)** | `wechat-universal` | `brew install --cask wechat-universal` | **与插件严格版本绑定**，转存官网原版 DMG 至 Release 托管，防止官方原包失效 |
 | **飞牛同步** | `feiniu-sync` | `brew install --cask feiniu-sync` | 自动请求官网防盗链鉴权签名并托管至 Release 直链，全自动巡检发布 |
 | **小黑日报助手** | `xiaoheiribao` | `brew install --cask xiaoheiribao` | 每日自动请求官网 API 提取最新版本与计算哈希 |
 | **Logi Options+ mini** | `logi-options-plus-mini` | `brew install --cask logi-options-plus-mini` | 追踪 Sparkle 官方 Appcast 自动更新精简版 |

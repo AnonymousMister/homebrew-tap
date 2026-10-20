@@ -27,6 +27,18 @@ def fetch_url(url):
     with urllib.request.urlopen(req, timeout=30) as resp:
         return resp.read().decode("utf-8")
 
+def download_file_and_hash(url, dest_path, timeout=300):
+    print(f"  [正在下载并计算 SHA256] {url}")
+    h = hashlib.sha256()
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=timeout) as resp, open(dest_path, "wb") as out_f:
+        while chunk := resp.read(65536):
+            h.update(chunk)
+            out_f.write(chunk)
+    sha = h.hexdigest()
+    print(f"  下载完成: {dest_path} (SHA256: {sha})")
+    return sha
+
 def compute_sha256(url):
     print(f"  [下载并计算 SHA256] {url}")
     req = urllib.request.Request(url, headers=HEADERS)
@@ -36,7 +48,7 @@ def compute_sha256(url):
             h.update(chunk)
     return h.hexdigest()
 
-def update_wechat_and_plugin(updated_list):
+def update_wechat_and_plugin(updated_list, release_assets):
     print(">> 检查微信与 X1a0He 插件状态...")
     readme_url = "https://raw.githubusercontent.com/X1a0He/X1a0HeWeChatPlugin/main/README.md"
     try:
@@ -45,30 +57,54 @@ def update_wechat_and_plugin(updated_list):
         print(f"  读取插件 README 失败: {e}")
         return
 
-    # 1. 提取插件自身版本与 SHA256
+    # 1. 检查并缓存微信插件 (x1a0he-wechat-plugin)
     plugin_ver_match = re.search(r"release-v([\d\.]+)-brightgreen", content)
     plugin_sha_match = re.search(r"安装包 pkg SHA 256:\s*([a-f0-9]{64})", content)
     
     if plugin_ver_match and plugin_sha_match:
         plugin_ver = plugin_ver_match.group(1).strip()
-        plugin_sha = plugin_sha_match.group(1).strip()
         plugin_cask = os.path.join(CASKS_DIR, "x1a0he-wechat-plugin.rb")
         
         with open(plugin_cask, "r") as f:
             cask_content = f.read()
         
         old_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
-        if old_ver != plugin_ver:
-            print(f"  发现微信插件新版本: {old_ver} -> {plugin_ver}")
-            cask_content = re.sub(r'version "[^"]+"', f'version "{plugin_ver}"', cask_content, count=1)
-            cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{plugin_sha}"', cask_content, count=1)
-            with open(plugin_cask, "w") as f:
-                f.write(cask_content)
-            updated_list.append(f"x1a0he-wechat-plugin {plugin_ver}")
-        else:
-            print(f"  微信插件已是最新版 ({plugin_ver})。")
+        gh_plugin_tag = f"x1a0he-wechat-plugin-v{plugin_ver}"
+        gh_plugin_url = f"https://github.com/AnonymousMister/homebrew-tap/releases/download/{gh_plugin_tag}/X1a0HeWeChatPlugin.pkg"
+        has_plugin_asset = check_asset_exists(gh_plugin_url)
+        needs_plugin_update = (old_ver != plugin_ver) or (not has_plugin_asset) or ("releases/download" not in cask_content)
 
-    # 2. 提取配套的 Universal 微信版本与 SHA256
+        if needs_plugin_update:
+            if old_ver != plugin_ver:
+                print(f"  发现微信插件新版本: {old_ver} -> {plugin_ver}")
+            else:
+                print(f"  微信插件 Release 资产缺失或未切换直链，准备下载转存: v{plugin_ver}")
+
+            raw_pkg_url = "https://raw.githubusercontent.com/X1a0He/X1a0HeWeChatPlugin/main/X1a0HeWeChatPlugin.pkg"
+            tmp_pkg = "/tmp/X1a0HeWeChatPlugin.pkg"
+            sha = download_file_and_hash(raw_pkg_url, tmp_pkg)
+
+            new_cask = re.sub(r'version "[^"]+"', f'version "{plugin_ver}"', cask_content, count=1)
+            new_cask = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', new_cask, count=1)
+            new_url_line = '  url "https://github.com/AnonymousMister/homebrew-tap/releases/download/x1a0he-wechat-plugin-v#{version}/X1a0HeWeChatPlugin.pkg"'
+            new_cask = re.sub(r'  url "[^"]+"', new_url_line, new_cask, count=1)
+
+            if new_cask != cask_content:
+                with open(plugin_cask, "w") as f:
+                    f.write(new_cask)
+                updated_list.append(f"x1a0he-wechat-plugin {plugin_ver}")
+
+            release_assets.append({
+                "tag": gh_plugin_tag,
+                "tag_prefix": "x1a0he-wechat-plugin-",
+                "file": tmp_pkg,
+                "title": f"x1a0he-wechat-plugin-v{plugin_ver}",
+                "notes": f"X1a0He 微信防撤回多开插件官方安装包 v{plugin_ver}"
+            })
+        else:
+            print(f"  微信插件已是最新版 ({plugin_ver}) 且 Release 资产已就绪。")
+
+    # 2. 检查并缓存 Universal 微信原版 (wechat-universal)
     # 格式: | 4.1.15.72 | 270152 |  ✅  | 2.12.0 / 2.12.1 | [立即下载](https://dldir1v6.qq.com/weixin/Universal/Mac/xWeChatMac_universal_4.1.15.72_270152.dmg) |
     wechat_match = re.search(r"\|\s*([\d\.]+)\s*\|\s*(\d+)\s*\|\s*✅.*?dldir1v6\.qq\.com", content)
     if wechat_match:
@@ -81,17 +117,41 @@ def update_wechat_and_plugin(updated_list):
             cask_content = f.read()
             
         old_wc_ver = re.search(r'version "([^"]+)"', cask_content).group(1)
-        if old_wc_ver != wc_full_ver:
-            print(f"  发现插件配套微信新版本: {old_wc_ver} -> {wc_full_ver}")
-            wc_url = f"https://dldir1v6.qq.com/weixin/Universal/Mac/xWeChatMac_universal_{wc_ver}_{wc_build}.dmg"
-            wc_sha = compute_sha256(wc_url)
-            cask_content = re.sub(r'version "[^"]+"', f'version "{wc_full_ver}"', cask_content, count=1)
-            cask_content = re.sub(r'sha256 "[^"]+"', f'sha256 "{wc_sha}"', cask_content, count=1)
-            with open(wechat_cask, "w") as f:
-                f.write(cask_content)
-            updated_list.append(f"wechat-universal {wc_full_ver}")
+        gh_wc_tag = f"wechat-universal-v{wc_ver}_{wc_build}"
+        gh_wc_file = f"xWeChatMac_universal_{wc_ver}_{wc_build}.dmg"
+        gh_wc_url = f"https://github.com/AnonymousMister/homebrew-tap/releases/download/{gh_wc_tag}/{gh_wc_file}"
+        has_wc_asset = check_asset_exists(gh_wc_url)
+        needs_wc_update = (old_wc_ver != wc_full_ver) or (not has_wc_asset) or ("releases/download" not in cask_content)
+
+        if needs_wc_update:
+            if old_wc_ver != wc_full_ver:
+                print(f"  发现插件配套微信新版本: {old_wc_ver} -> {wc_full_ver}")
+            else:
+                print(f"  配套微信 Release 资产缺失或未切换直链，准备下载转存: {wc_full_ver}")
+
+            raw_wc_url = f"https://dldir1v6.qq.com/weixin/Universal/Mac/xWeChatMac_universal_{wc_ver}_{wc_build}.dmg"
+            tmp_dmg = f"/tmp/{gh_wc_file}"
+            wc_sha = download_file_and_hash(raw_wc_url, tmp_dmg, timeout=600)
+
+            new_cask = re.sub(r'version "[^"]+"', f'version "{wc_full_ver}"', cask_content, count=1)
+            new_cask = re.sub(r'sha256 "[^"]+"', f'sha256 "{wc_sha}"', new_cask, count=1)
+            new_url_line = '  url "https://github.com/AnonymousMister/homebrew-tap/releases/download/wechat-universal-v#{version.csv.first}_#{version.csv.second}/xWeChatMac_universal_#{version.csv.first}_#{version.csv.second}.dmg"'
+            new_cask = re.sub(r'  url "[^"]+"', new_url_line, new_cask, count=1)
+
+            if new_cask != cask_content:
+                with open(wechat_cask, "w") as f:
+                    f.write(new_cask)
+                updated_list.append(f"wechat-universal {wc_full_ver}")
+
+            release_assets.append({
+                "tag": gh_wc_tag,
+                "tag_prefix": "wechat-universal-",
+                "file": tmp_dmg,
+                "title": f"wechat-universal-v{wc_ver}_{wc_build}",
+                "notes": f"官方微信 Universal 原版安装包（适配插件锁版）v{wc_ver}_{wc_build}"
+            })
         else:
-            print(f"  配套微信已是最新版 ({wc_full_ver})。")
+            print(f"  配套微信已是最新版 ({wc_full_ver}) 且 Release 资产已就绪。")
 
 def update_xiaoheiribao(updated_list):
     print(">> 检查小黑日报助手状态...")
@@ -292,6 +352,7 @@ def update_feiniu_sync(updated_list, release_assets):
 
     release_assets.append({
         "tag": f"v{latest_ver}",
+        "tag_prefix": "v",
         "file": tmp_dmg,
         "title": f"v{latest_ver}",
         "notes": f"FeiNiu Sync 飞牛同步客户端官方包 v{latest_ver}"
@@ -300,7 +361,7 @@ def update_feiniu_sync(updated_list, release_assets):
 def main():
     updated = []
     release_assets = []
-    update_wechat_and_plugin(updated)
+    update_wechat_and_plugin(updated, release_assets)
     update_xiaoheiribao(updated)
     update_logi_options_plus_mini(updated)
     update_wechat_input(updated)

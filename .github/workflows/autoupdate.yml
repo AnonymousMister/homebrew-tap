@@ -5,6 +5,12 @@ on:
     # 每日北京时间凌晨 04:00 (UTC 20:00) 自动巡检
     - cron: '0 20 * * *'
   workflow_dispatch: # 支持手动点击一键触发
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/autoupdate.yml'
+      - 'scripts/**'
 
 permissions:
   contents: write
@@ -31,38 +37,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 -c '
-          import json, subprocess
-          manifest = "${{ steps.update.outputs.release_manifest }}"
-          with open(manifest) as f:
-              assets = json.load(f)
-          for item in assets:
-              tag = item["tag"]
-              file_path = item["file"]
-              title = item.get("title", tag)
-              notes = item.get("notes", "自动托管下载资产")
-              print(f"正在发布最新资产 {file_path} 到 Tag {tag}...")
-
-              # 1. 创建或更新当前最新 Release
-              res = subprocess.run(["gh", "release", "view", tag], capture_output=True)
-              if res.returncode == 0:
-                  subprocess.run(["gh", "release", "upload", tag, file_path, "--clobber"], check=True)
-              else:
-                  subprocess.run(["gh", "release", "create", tag, file_path, "--title", title, "--notes", notes], check=True)
-
-              # 2. 清理所有历史旧 Releases 与 Tags，保证发布页面仅保留最新版本
-              list_res = subprocess.run(["gh", "release", "list", "--json", "tagName"], capture_output=True, text=True)
-              if list_res.returncode == 0:
-                  try:
-                      releases = json.loads(list_res.stdout)
-                      for rel in releases:
-                          old_tag = rel.get("tagName")
-                          if old_tag and old_tag != tag:
-                              print(f"清理旧版本 Release: {old_tag}")
-                              subprocess.run(["gh", "release", "delete", old_tag, "--yes", "--cleanup-tag"], check=False)
-                  except Exception as e:
-                      print(f"清理旧 Release 出错 (跳过): {e}")
-          '
+          python3 scripts/publish_assets.py "${{ steps.update.outputs.release_manifest }}"
 
       - name: Commit & Push Changes
         if: steps.update.outputs.has_update == 'true'
