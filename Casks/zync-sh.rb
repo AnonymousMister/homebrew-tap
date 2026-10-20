@@ -14,10 +14,8 @@ cask "zync-sh" do
 
   postflight_steps do
     run "/usr/bin/xattr",
-        args:         ["-rd", "com.apple.quarantine", "{{appdir}}/zync.app"],
+        args:         ["-cr", "{{appdir}}/zync.app"],
         must_succeed: false
-    run "/usr/bin/codesign",
-        args: ["--force", "--deep", "--sign", "-", "{{appdir}}/zync.app"]
   end
 
   zap trash: [
