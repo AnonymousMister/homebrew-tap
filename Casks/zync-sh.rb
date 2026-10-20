@@ -12,6 +12,14 @@ cask "zync-sh" do
 
   app "zync.app"
 
+  postflight_steps do
+    run "/usr/bin/xattr",
+        args:         ["-rd", "com.apple.quarantine", "{{appdir}}/zync.app"],
+        must_succeed: false
+    run "/usr/bin/codesign",
+        args: ["--force", "--deep", "--sign", "-", "{{appdir}}/zync.app"]
+  end
+
   zap trash: [
     "~/Library/Application Support/in.thesudoer.zync",
     "~/Library/Caches/in.thesudoer.zync",
