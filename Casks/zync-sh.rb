@@ -1,6 +1,6 @@
 cask "zync-sh" do
-  version "2.36.0"
-  sha256 "ba39d6bf1fc74830f937d85d490dc6e2b9197df35436c3871eb66202ef03e397"
+  version "2.37.0"
+  sha256 "42d85c59bd7be0bbf9e96259099278f075f37001d255c21616b1865ad2ba1779"
 
   url "https://github.com/zync-sh/zync/releases/download/v#{version}/zync_#{version}_aarch64.dmg"
   name "Zync"
