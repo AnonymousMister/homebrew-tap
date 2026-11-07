@@ -1,6 +1,6 @@
 cask "x1a0he-wechat-plugin" do
-  version "2.14.0"
-  sha256 "ee34a83b773cfb6dad6e583a25512faea74e686aeb98a9674e43b5d5518cdea0"
+  version "2.14.1"
+  sha256 "2441d534791b2e719c0e37c841626648addcf47ef1b1a94ce732871123149123"
 
   url "https://github.com/AnonymousMister/homebrew-tap/releases/download/x1a0he-wechat-plugin-v#{version}/X1a0HeWeChatPlugin.pkg"
   name "X1a0He WeChat Plugin"
