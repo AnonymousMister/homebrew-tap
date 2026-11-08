@@ -13,14 +13,5 @@ cask "x1a0he-wechat-plugin" do
 
   pkg "X1a0HeWeChatPlugin.pkg"
 
-  postflight_steps do
-    run "/usr/bin/xattr",
-        args: ["-rd", "com.apple.quarantine", "/Applications/WeChat.app"],
-        sudo: true
-    run "/usr/bin/codesign",
-        args: ["--force", "--deep", "--sign", "-", "/Applications/WeChat.app"],
-        sudo: true
-  end
-
   uninstall pkgutil: "com.x1a0he.pkg.wechatplugin"
 end
