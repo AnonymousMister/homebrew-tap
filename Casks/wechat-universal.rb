@@ -1,6 +1,6 @@
 cask "wechat-universal" do
-  version "4.2.0.51,270387"
-  sha256 "ede51054941e241ffa0873003d28681b92bc927de371968113eb4f648fd637a2"
+  version "4.2.0.54,270390"
+  sha256 "04933657d5c3a3445bd7c07859a7a9b7e6f3437c2e19b5df6984e3179c25b6ca"
 
   url "https://github.com/AnonymousMister/homebrew-tap/releases/download/wechat-universal-v#{version.csv.first}_#{version.csv.second}/xWeChatMac_universal_#{version.csv.first}_#{version.csv.second}.dmg"
   name "WeChat Universal (Plugin Supported)"
