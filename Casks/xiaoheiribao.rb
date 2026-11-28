@@ -1,6 +1,6 @@
 cask "xiaoheiribao" do
-  version "1.8.6"
-  sha256 "6e3f3c321e74376db0c792405e3a4bd37a325e788f3963f513a50d2378feb20a"
+  version "1.8.7"
+  sha256 "c7fcef6271fe86b2dd871c961f2e24302fb8ba1d6e2b9b676d5336b6b40c9c5a"
 
   url "https://github.com/shjiyue/xiaoheiribao/releases/download/v#{version}/XiaoheiDailyAssistant-#{version}-mac-arm64.dmg.zip"
   name "XiaoHei Daily Assistant"
